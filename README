@@ -1,0 +1,9 @@
+Project's home: http://www.hexstreamsoft.com/projects/multiple-value-variants/
+
+
+multiple-value-variants gives access to multiple-value variants
+of operators through one macro: MULTIPLE-VALUE.
+
+
+This library is in the Public Domain.
+See the UNLICENSE file for details.
