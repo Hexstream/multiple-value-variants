@@ -32,45 +32,46 @@
           (error "(~S ~S) requires at least one form or an explicit ~S."
                  'multiple-value name :identity))))
 
-(define and (&key (identity nil identityp)) (&rest forms)
+(define and (&key (identity nil identityp) (nth 0)) (&rest forms)
   (%handling-identity
    'and identity identityp forms
    (lambda ()
      (%recursively forms (lambda (current rest)
                            (%catching-values
                             (lambda (values)
-                              `(if (car ,values)
+                              `(if (nth ,nth ,values)
                                    ,rest
                                    (values-list ,values)))
                             current))))))
 
-(define or (&key (identity nil identityp)) (&rest forms)
+(define or (&key (identity nil identityp) (nth 0)) (&rest forms)
   (%handling-identity
    'or identity identityp forms
    (lambda ()
      (%recursively forms (lambda (current rest)
                            (%catching-values
                             (lambda (values)
-                              `(if (car ,values)
+                              `(if (nth ,nth ,values)
                                    (values-list ,values)
                                    ,rest))
                             current))))))
 
-(define cond () (&rest clauses)
+(define cond (&key (nth 0)) (&rest clauses)
   (%recursively
    clauses
    (lambda (current else)
      (destructuring-bind (condition &body body) current
        (if body
-           (if (rest body)
-               `(cond (,condition ,@body)
-                      (t ,else))
-               `(if ,condition
-                    ,(first body)
-                    ,else))
+           (let ((test `(nth-value ,nth ,condition)))
+             (if (rest body)
+                 `(cond (,test ,@body)
+                        (t ,else))
+                 `(if ,test
+                      ,(first body)
+                      ,else)))
            (%catching-values
             (lambda (values)
-              `(if (car ,values)
+              `(if (nth ,nth ,values)
                    ,(if body
                         `(progn ,@body)
                         `(values-list ,values))
@@ -79,7 +80,7 @@
    :last (lambda (last)
            (destructuring-bind (condition &body body) last
              (if body
-                 `(when ,condition ,@body)
+                 `(when (nth-value ,nth ,condition) ,@body)
                  condition)))))
 
 
@@ -96,6 +97,7 @@
        ,else
        (multiple-value (,@(when identityp (list :identity identity)))
          (progn ,@forms))))
+
 
 (defun %make-list-accumulator ()
   '(values accumulate finish)
