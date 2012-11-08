@@ -1,64 +1,131 @@
 (in-package #:multiple-value-variants)
 
-(defun %recursively (forms last-transform function)
+(define progn (&key (identity '(values))) (&body forms)
   (if forms
-      (labels ((recurse (forms)
-                 (destructuring-bind (current . rest) forms
-                   (if rest
-                       (let ((values (gensym (string '#:values))))
-                         `(multiple-value-call
-                              (lambda (&rest ,values)
-                                ,(funcall function values (recurse rest)))
-                            ,current))
-                       (funcall last-transform current)))))
-        (recurse forms))
-      '(values)))
-
-(define and () (&rest forms)
-  (%recursively forms #'identity
-                (lambda (values rest)
-                  `(if (car ,values)
-                       ,rest
-                       (values-list ,values)))))
-
-(define or () (&rest forms)
-  (%recursively forms #'identity
-                (lambda (values rest)
-                  `(if (car ,values)
-                       (values-list ,values)
-                       ,rest))))
-
-#+nil(define cond () (&whole whole &rest clauses)
-       (if (every #'cdr clauses)
-           whole
-           (%recursively clauses ?
-                         (lambda (values rest)
-                           `(if (car ,values)
-                                (values-list ,values)
-                                ,else)))
-           (and clauses
-                (map-bind (reduce) (((clause else) clauses)
-                                    (() :from-end t :initial-value nil))
-                  (destructuring-bind (test &rest forms) clause
-                    (if forms
-                        `(cond (test ,@forms)
-                               (t else))
-                        (let ((values (gensym (string '#:values))))
-                          `(multiple-value-call (lambda (&rest ,values)
-                                                  (if (car ,values)
-                                                      (values-list ,values)
-                                                      ,else))
-                             ,test))))))))
-
-(define when () (test &body forms)
-  `(cond (,test ,@forms)
-         (t (values))))
-
-(define unless () (test &body forms)
-  `(cond ((not ,test) ,@forms)
-         (t (values))))
+      `(progn ,@forms)
+      identity))
 
 (define prog1 () (result &body body)
   `(multiple-value-prog1 ,result ,@body))
 
-;;; multiple-value-bind? aref? array-row-major-index? assoc? assoc-if? assoc-if-not? bit? sbit? butlast? nbutlast? car? cdr? cddr? rest? char? schar? count? count-if? count-if-not? delete delete-if delete-if-not remove remove-if remove-if-not destructuring-bind? dolist dotimes elt? every some notevery notany fill find find-if find-if-not first second third fourth fifth sixth seventh eighth ninth tenth gethash? map map-into? mapcan mapcar mapcon maplist member? member-if? member-if-not? mismatch? nth? nth-value? position? position-if? position-if-not? rassoc? rassoc-if? rassoc-if-not? reduce? replace? search?
+(defun %recursively (forms function &key
+                     (last #'identity))
+  (if forms
+      (labels ((recurse (forms)
+                 (destructuring-bind (current . rest) forms
+                   (if rest
+                       (funcall function current (recurse rest))
+                       (funcall last current)))))
+        (recurse forms))
+      '(values)))
+
+(defun %catching-values (function values-form)
+  (let ((values (gensym (string '#:values))))
+    `(multiple-value-bind (&rest ,values) ,values-form
+       ,(funcall function values))))
+
+(defun %handling-identity (name identity identityp forms function)
+  (if forms
+      (funcall function)
+      (if identityp
+          identity
+          (error "(~S ~S) requires at least one form or an explicit ~S."
+                 'multiple-value name :identity))))
+
+(define and (&key (identity nil identityp)) (&rest forms)
+  (%handling-identity
+   'and identity identityp forms
+   (lambda ()
+     (%recursively forms (lambda (current rest)
+                           (%catching-values
+                            (lambda (values)
+                              `(if (car ,values)
+                                   ,rest
+                                   (values-list ,values)))
+                            current))))))
+
+(define or (&key (identity nil identityp)) (&rest forms)
+  (%handling-identity
+   'or identity identityp forms
+   (lambda ()
+     (%recursively forms (lambda (current rest)
+                           (%catching-values
+                            (lambda (values)
+                              `(if (car ,values)
+                                   (values-list ,values)
+                                   ,rest))
+                            current))))))
+
+(define cond () (&rest clauses)
+  (%recursively
+   clauses
+   (lambda (current else)
+     (destructuring-bind (condition &body body) current
+       (if body
+           (if (rest body)
+               `(cond (,condition ,@body)
+                      (t ,else))
+               `(if ,condition
+                    ,(first body)
+                    ,else))
+           (%catching-values
+            (lambda (values)
+              `(if (car ,values)
+                   ,(if body
+                        `(progn ,@body)
+                        `(values-list ,values))
+                   ,else))
+            condition))))
+   :last (lambda (last)
+           (destructuring-bind (condition &body body) last
+             (if body
+                 `(when ,condition ,@body)
+                 condition)))))
+
+
+(define when (&key (else '(values)) (identity '(values) identityp))
+    (test &body forms)
+  `(if ,test
+       (multiple-value (,@(when identityp (list :identity identity)))
+         (progn ,@forms))
+       ,else))
+
+(define unless (&key (else '(values)) (identity '(values) identityp))
+    (test &body forms)
+  `(if ,test
+       ,else
+       (multiple-value (,@(when identityp (list :identity identity)))
+         (progn ,@forms))))
+
+(defun %make-list-accumulator ()
+  '(values accumulate finish)
+  (let* ((accumulated (cons :head nil))
+         (tail accumulated))
+    (values (lambda (new-value)
+              (let ((new-cons (cons new-value nil)))
+                (setf (cdr tail) new-cons
+                      tail new-cons)
+                new-value))
+            (lambda ()
+              (cdr accumulated)))))
+
+(defun %make-gensym-generator (&optional default-base)
+  (let ((count 0))
+    (lambda (&optional
+             (base
+              (or default-base
+                  (error "override-base must be specified because no default-base."))))
+      (gensym (format nil "~A~D-" base (incf count))))))
+
+#+nil
+(define mapcar (multiple-values-count) (function list &rest more-lists)
+  (let ((lists (cons list more-lists)))
+    (multiple-value-bind (accumulate-vars finish-vars)
+        (flet ((vars (base) (map-into (make-list multiple-values-count)
+                                      (%make-gensym-generator (string base)))))
+          (values (vars '#:accumulate) (vars '#:finish)))
+      `(let ?
+         (mapc)
+         (values )))))
+
+;;; aref? array-row-major-index? assoc? assoc-if? assoc-if-not? bit? sbit? butlast? nbutlast? car? cdr? cddr? rest? char? schar? count? count-if? count-if-not? delete delete-if delete-if-not remove remove-if remove-if-not destructuring-bind? dolist dotimes elt? every some notevery notany fill find find-if find-if-not first second third fourth fifth sixth seventh eighth ninth tenth gethash? map map-into? mapcan mapcar mapcon maplist member? member-if? member-if-not? mismatch? nth? nth-value? position? position-if? position-if-not? rassoc? rassoc-if? rassoc-if-not? reduce? replace? search?
