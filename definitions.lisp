@@ -99,6 +99,38 @@
          (progn ,@forms))))
 
 
+(defun %caselike (operator keyform cases &optional otherwisep)
+  (list* operator
+         keyform
+         (let ((new-cases
+                (map-bind (mapcar) ((case cases))
+                  (destructuring-bind (keys &body body) case
+                    `(,keys (multiple-value () (progn ,@body)))))))
+           (if (and otherwisep
+                    (not (member (car (first (last cases)))
+                                 '(t otherwise))))
+               (nconc new-cases (list '(t (values))))
+               new-cases))))
+
+(define case () (keyform &body cases)
+  (%caselike 'case keyform cases t))
+
+(define ccase () (keyplace &body cases)
+  (%caselike 'ccase keyplace cases))
+
+(define ecase () (keyform &body cases)
+  (%caselike 'ecase keyform cases))
+
+(define typecase () (keyform &body cases)
+  (%caselike 'typecase keyform cases t))
+
+(define ctypecase () (keyplace &body cases)
+  (%caselike 'ctypecase keyplace cases))
+
+(define etypecase () (keyform &body cases)
+  (%caselike 'etypecase keyform cases))
+
+
 (defun %make-list-accumulator ()
   '(values accumulate finish)
   (let* ((accumulated (cons :head nil))
