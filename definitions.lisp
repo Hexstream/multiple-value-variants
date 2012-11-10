@@ -143,6 +143,17 @@
             (lambda ()
               (cdr accumulated)))))
 
+(defun %make-nconc-accumulator ()
+  '(values accumulate finish)
+  (let* ((accumulated (cons :head nil))
+         (tail accumulated))
+    (values (lambda (new-values)
+              (setf (cdr tail) new-values
+                    tail (last tail))
+              (values))
+            (lambda ()
+              (cdr accumulated)))))
+
 (defun %make-gensym-generator (&optional default-base)
   (let ((count 0))
     (lambda (&optional
@@ -151,15 +162,48 @@
                   (error "override-base must be specified because no default-base."))))
       (gensym (format nil "~A~D-" base (incf count))))))
 
-#+nil
-(define mapcar (multiple-values-count) (function list &rest more-lists)
-  (let ((lists (cons list more-lists)))
-    (multiple-value-bind (accumulate-vars finish-vars)
+(defun %expand-multiple-value-mapper (mapper accumulator-maker
+                                      multiple-values-count function lists)
+  (let ((element-vars (map-into (make-list (length lists))
+                                (%make-gensym-generator '#:list)))
+        (function-var (gensym (string '#:function))))
+    (multiple-value-bind (value-vars accumulate-vars finish-vars)
         (flet ((vars (base) (map-into (make-list multiple-values-count)
                                       (%make-gensym-generator (string base)))))
-          (values (vars '#:accumulate) (vars '#:finish)))
-      `(let ?
-         (mapc)
-         (values )))))
+          (values (vars '#:value) (vars '#:accumulate) (vars '#:finish)))
+      `(let ((,function-var ,function) ,@accumulate-vars ,@finish-vars)
+         (setf ,@(mapcan (let ((make-accumulator (list accumulator-maker)))
+                           (plambda (list `(values ,:1 ,:2) make-accumulator)))
+                         accumulate-vars
+                         finish-vars))
+         (,mapper (lambda (,@element-vars)
+                    (multiple-value-bind (,@value-vars)
+                        (funcall ,function-var ,@element-vars)
+                      ,@(mapcar (plambda `(funcall ,:1 ,:2))
+                                accumulate-vars
+                                value-vars)))
+                  ,@lists)
+         (values ,@(mapcar (plambda `(funcall ,:1))
+                           finish-vars))))))
 
-;;; aref? array-row-major-index? assoc? assoc-if? assoc-if-not? bit? sbit? butlast? nbutlast? car? cdr? cddr? rest? char? schar? count? count-if? count-if-not? delete delete-if delete-if-not remove remove-if remove-if-not destructuring-bind? dolist dotimes elt? every some notevery notany fill find find-if find-if-not first second third fourth fifth sixth seventh eighth ninth tenth gethash? map map-into? mapcan mapcar mapcon maplist member? member-if? member-if-not? mismatch? nth? nth-value? position? position-if? position-if-not? rassoc? rassoc-if? rassoc-if-not? reduce? replace? search?
+(define mapcar (multiple-values-count) (function list &rest more-lists)
+  (%expand-multiple-value-mapper 'mapc '%make-list-accumulator
+                                 multiple-values-count
+                                 function (cons list more-lists)))
+
+(define mapcan (multiple-values-count) (function list &rest more-lists)
+  (%expand-multiple-value-mapper 'mapc '%make-nconc-accumulator
+                                 multiple-values-count
+                                 function (cons list more-lists)))
+
+(define maplist (multiple-values-count) (function list &rest more-lists)
+  (%expand-multiple-value-mapper 'mapl '%make-list-accumulator
+                                 multiple-values-count
+                                 function (cons list more-lists)))
+
+(define mapcon (multiple-values-count) (function list &rest more-lists)
+  (%expand-multiple-value-mapper 'mapl '%make-nconc-accumulator
+                                 multiple-values-count
+                                 function (cons list more-lists)))
+
+;;; aref? array-row-major-index? assoc? assoc-if? assoc-if-not? bit? sbit? butlast? nbutlast? car? cdr? cddr? rest? char? schar? count? count-if? count-if-not? delete delete-if delete-if-not remove remove-if remove-if-not destructuring-bind? dolist dotimes elt? every some notevery notany fill find find-if find-if-not first second third fourth fifth sixth seventh eighth ninth tenth gethash? map map-into? member? member-if? member-if-not? mismatch? nth? nth-value? position? position-if? position-if-not? rassoc? rassoc-if? rassoc-if-not? reduce? replace? search?

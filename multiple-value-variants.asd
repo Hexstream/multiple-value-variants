@@ -7,7 +7,9 @@
 
   :description "Gives access to multiple-value variants of operators through one macro: MULTIPLE-VALUE."
 
-  :depends-on (#:map-bind #:enhanced-multiple-value-bind)
+  :depends-on (#:map-bind
+               #:positional-lambda
+               #:enhanced-multiple-value-bind)
 
   :version "0.1"
   :serial cl:t
