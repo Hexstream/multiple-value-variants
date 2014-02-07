@@ -27,6 +27,10 @@
                               :type (or function symbol)
                               :initform #'list)))
 
+(defmethod print-object ((info multiple-value-variants:standard-info) stream)
+  (print-unreadable-object (info stream :type t)
+    (prin1 (multiple-value-variants:name info) stream)))
+
 (defun multiple-value-variants:locate (name &key (errorp t))
   (check-type name symbol)
   (or (gethash name *infos*)
