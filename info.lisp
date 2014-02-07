@@ -43,22 +43,47 @@
   (check-type new info)
   (setf (gethash name *infos*) new))
 
+;; Maybe export at some point.
+(defun %canonicalize-options (options info)
+  (if (listp options)
+      options
+      (let ((transformed
+             (funcall (multiple-value-variants:atom-options-transformer info)
+                      options)))
+        (if (listp transformed)
+            transformed
+            (error "atom-options-transformer for ~S ~
+                    returned ~S, which is not a list."
+                   (multiple-value-variants:name info) transformed)))))
+
+;; Maybe export at some point.
+(defun %locate-expand (form env)
+  (let ((info (and (typep form '(cons symbol))
+                   (multiple-value-variants:locate (first form) :errorp nil))))
+    (if info
+        (values info form)
+        (multiple-value-bind (expansion expandedp) (macroexpand-1 form env)
+          (if expandedp
+              (%locate-expand expansion env)
+              ;; For now, let LOCATE signal the error, only report the last name tried.
+              ;; TODO: better error reporting (chain of attempted names)
+              ;; when macroexpansion is involved.
+              ;; TODO: Do something sensible if FORM is not a list.
+              (multiple-value-variants:locate (first form)))))))
+
+;; Maybe export at some point.
+(defun %canonicalize (options form &optional env)
+  (multiple-value-bind (info form) (%locate-expand form env)
+    (values (%canonicalize-options options info)
+            form
+            info)))
+
 (defun multiple-value-variants:expand (options form &optional env)
-  (check-type form cons)
-  (let* ((operator (first form))
-         (info (multiple-value-variants:locate operator))
-         (options
-          (if (listp options)
-              options
-              (let ((transformed
-                     (funcall (multiple-value-variants:atom-options-transformer info)
-                              options)))
-                (if (listp transformed)
-                    transformed
-                    (error "atom-options-transformer for ~S ~
-                            returned ~S, which is not a list."
-                           operator transformed))))))
-    (funcall (multiple-value-variants:expander info) options form env)))
+  (multiple-value-bind (options form info) (%canonicalize options form env)
+    (funcall (multiple-value-variants:expander info)
+             options
+             form
+             env)))
 
 (defun %extract-&whole (lambda-list)
   '(values whole-var lambda-list)
