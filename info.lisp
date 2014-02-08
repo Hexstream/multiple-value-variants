@@ -31,11 +31,19 @@
   (print-unreadable-object (info stream :type t)
     (prin1 (multiple-value-variants:name info) stream)))
 
+(define-condition multiple-value-variants:not-found (error)
+  ((%name :initarg :name
+          :reader multiple-value-variants:name
+          :type symbol))
+  (:report (lambda (not-found stream)
+             (format stream "No multiple-value-variant with name ~S."
+                     (multiple-value-variants:name not-found)))))
+
 (defun multiple-value-variants:locate (name &key (errorp t))
   (check-type name symbol)
   (or (gethash name *infos*)
       (and errorp
-           (error "No multiple-value-variant with name ~S." name))))
+           (error 'multiple-value-variants:not-found :name name))))
 
 (defun (setf %locate) (new name &key (errorp t))
   (declare (ignore errorp))
@@ -56,20 +64,41 @@
                     returned ~S, which is not a list."
                    (multiple-value-variants:name info) transformed)))))
 
+(define-condition multiple-value-variants:not-found-chain (error)
+  ((%form :initarg :form
+          :reader multiple-value-variants:form)
+   (%chain :initarg :chain
+           :reader multiple-value-variants:chain
+           :type list))
+  (:report (lambda (not-found stream)
+             (format stream "~S expansion of the following form failed:~@
+                             ~S~2%Chain of attempted expansions: ~S"
+                     'multiple-value-variants:multiple-value
+                     (multiple-value-variants:form not-found)
+                     (multiple-value-variants:chain not-found)))))
+
 ;; Maybe export at some point.
-(defun %locate-expand (form env)
-  (let ((info (and (typep form '(cons symbol))
-                   (multiple-value-variants:locate (first form) :errorp nil))))
-    (if info
-        (values info form)
-        (multiple-value-bind (expansion expandedp) (macroexpand-1 form env)
-          (if expandedp
-              (%locate-expand expansion env)
-              ;; For now, let LOCATE signal the error, only report the last name tried.
-              ;; TODO: better error reporting (chain of attempted names)
-              ;; when macroexpansion is involved.
-              ;; TODO: Do something sensible if FORM is not a list.
-              (multiple-value-variants:locate (first form)))))))
+(defun %locate-expand (form env &aux chain (initial-form form))
+  (check-type form (or cons symbol))
+  (labels ((recurse (form)
+             (etypecase form
+               ((cons symbol)
+                (let* ((operator (first form))
+                       (info (multiple-value-variants:locate operator :errorp nil)))
+                  (if info
+                      (values info form)
+                      (attempt-macroexpansion form (list :macro operator)))))
+               (symbol
+                (attempt-macroexpansion form (list :symbol-macro form)))))
+           (attempt-macroexpansion (form new-link)
+             (push new-link chain)
+             (multiple-value-bind (expansion expandedp) (macroexpand-1 form env)
+               (if expandedp
+                   (recurse expansion)
+                   (error 'multiple-value-variants:not-found-chain
+                          :form initial-form
+                          :chain (nreverse chain))))))
+    (recurse form)))
 
 ;; Maybe export at some point.
 (defun %canonicalize (options form &optional env)

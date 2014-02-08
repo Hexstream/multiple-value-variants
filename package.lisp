@@ -13,6 +13,12 @@
            #:options-lambda-list
            #:expander
            #:atom-options-transformer
+
+           #:not-found
+           #:not-found-chain
+           #:form
+           #:chain
+
            #:locate
            #:expand
            #:ensure
