@@ -173,17 +173,17 @@
           (values (vars '#:value) (vars '#:accumulate) (vars '#:finish)))
       `(let ((,function-var ,function) ,@accumulate-vars ,@finish-vars)
          (setf ,@(mapcan (let ((make-accumulator (list accumulator-maker)))
-                           (plambda (list `(values ,:1 ,:2) make-accumulator)))
+                           (plambda (list (list 'values :1 :2) make-accumulator)))
                          accumulate-vars
                          finish-vars))
          (,mapper (lambda (,@element-vars)
                     (multiple-value-bind (,@value-vars)
                         (funcall ,function-var ,@element-vars)
-                      ,@(mapcar (plambda `(funcall ,:1 ,:2))
+                      ,@(mapcar (plambda (list 'funcall :1 :2))
                                 accumulate-vars
                                 value-vars)))
                   ,@lists)
-         (values ,@(mapcar (plambda `(funcall ,:1))
+         (values ,@(mapcar (plambda (list 'funcall :1))
                            finish-vars))))))
 
 (define mapcar (multiple-values-count) (function list &rest more-lists)
