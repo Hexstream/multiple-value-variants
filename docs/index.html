@@ -85,7 +85,7 @@
 
       <section id="introduction">
 
-        <p><cite class="common-lisp library">multiple-value-variants</cite> gives access to multiple-value variants of operators through one macro: <code class="common-lisp library macro operator">multiple-value</code>. There are <a href="#built-in-variants">built-in variants</a> for some standard operators; it's easy to create your own variants for other operators. The <a href="#mapcar">multiple-value mapping operators</a> are especially useful.</p>
+        <p><cite class="relevant">multiple-value-variants</cite> gives access to multiple-value variants of operators through one macro: <code class="relevant">multiple-value</code>. There are <a href="#built-in-variants">built-in variants</a> for some standard operators; it's easy to create your own variants for other operators. The <a href="#mapcar">multiple-value mapping operators</a> are especially useful.</p>
 
       </section>
 
@@ -108,14 +108,14 @@
           </span>
         </h1>
 
-        <p>First of all, in the way of packages there's the <code class="common-lisp library package">multiple-value-variants</code> package, which is also nicknamed <code class="common-lisp package nickname">multiple-value-variant</code>, <code class="common-lisp package nickname">mv-variants</code> and <code class="common-lisp package nickname">mv-variant</code>. The primary exported symbol is the <code class="common-lisp library macro operator">multiple-value</code> macro. Explicitly <code class="common-lisp">(:import-from #:multiple-value-variants #:multiple-value)</code> for normal usage. Don't <code class="common-lisp">(:use)</code>!</p>
+        <p>First of all, in the way of packages there's the <code class="relevant">multiple-value-variants</code> package, which is also nicknamed <code class="relevant">multiple-value-variant</code>, <code class="relevant">mv-variants</code> and <code class="relevant">mv-variant</code>. The primary exported symbol is the <code class="relevant">multiple-value</code> macro. Explicitly <code class="common-lisp">(:import-from #:multiple-value-variants #:multiple-value)</code> for normal usage. Don't <code class="common-lisp">(:use)</code>!</p>
 
-        <p>The <code class="common-lisp library package">multiple-value-variants</code> package also exports other symbols related to creation of new multiple-value variants and querying of existing ones (documentation pending, check <a href="https://github.com/Hexstream/multiple-value-variants/blob/0556501700dbf09329f703b80814f36fe0106668/package.lisp">package.lisp</a> for a list of all exported symbols). The most important of these is <code class="common-lisp library macro operator">mv-variant:define</code>, which is normally used to define new multiple-value variants. You should normally explicitly package-qualify this symbol.</p>
+        <p>The <code class="relevant">multiple-value-variants</code> package also exports other symbols related to creation of new multiple-value variants and querying of existing ones (documentation pending, check <a href="https://github.com/Hexstream/multiple-value-variants/blob/0556501700dbf09329f703b80814f36fe0106668/package.lisp">package.lisp</a> for a list of all exported symbols). The most important of these is <code class="relevant">mv-variant:define</code>, which is normally used to define new multiple-value variants. You should normally explicitly package-qualify this symbol.</p>
 
         <p>There are 2 recurring features throughout the API:</p>
 
         <ul>
-          <li><var>identity</var> generally indicates the form to evaluate (and values to return) when an implicit <code class="common-lisp library variant operator"><a href="#progn">(multiple-value progn)</a></code> has no forms.</li>
+          <li><var>identity</var> generally indicates the form to evaluate (and values to return) when an implicit <code class="relevant"><a href="#progn">(multiple-value progn)</a></code> has no forms.</li>
           <li><var>nth</var> indicates which value to test for conditionals.</li>
         </ul>
 
@@ -151,12 +151,12 @@
           <dd>
             <p>Just like <code>progn</code>, except if there are no <var>forms</var> then the <var>identity</var> is evaluated instead.</p>
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> () (<code class="common-lisp library marker"><a href="#progn">progn</a></code> 1 2 3))
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> () (<code class="relevant marker"><a href="#progn">progn</a></code> 1 2 3))
 =&gt; 3</code></pre>
             </div>
 
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> () (<code class="common-lisp library marker"><a href="#progn">progn</a></code>))
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> () (<code class="relevant marker"><a href="#progn">progn</a></code>))
 =&gt; [no values]</code></pre>
             </div>
           </dd>
@@ -169,10 +169,10 @@
   (&amp;rest <var>forms</var>)</pre></dt>
           <dd>
             <p>If <var>identity</VAR> is not specified, then there must be at least one <var>form.</var></p>
-            <p>This is like normal <code>and</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is <a class="common-lisp standard glossary" href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#false">false</a>, returns all values that were returned by that <var>form</var>, not just the <a class="common-lisp standard glossary" href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
+            <p>This is like normal <code>and</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#false">false</a>, returns all values that were returned by that <var>form</var>, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> ()
-  (<code class="common-lisp library marker"><a href="#and">and</a></code> (values <code class="common-lisp standard constant">nil</code> 'other 'values)
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> ()
+  (<code class="relevant marker"><a href="#and">and</a></code> (values <code>nil</code> 'other 'values)
        t))
 =&gt; <code>NIL</code>, OTHER, VALUES</code></pre>
             </div>
@@ -182,10 +182,10 @@
   (&amp;rest <var>forms</var>)</pre></dt>
           <dd>
             <p>If <var>identity</var> is not specified, then there must be at least one <var>form</var>.</p>
-            <p>This is like normal <code>or</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is true, returns all values that were returned by that <var>form</var>, not just the <a class="common-lisp standard glossary" href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
+            <p>This is like normal <code>or</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is true, returns all values that were returned by that <var>form</var>, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> ()
-  (<code class="common-lisp library marker"><a href="#or">or</a></code> (<code>find-symbol</code> <code class="string">"OR"</code> '#:cl)
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> ()
+  (<code class="relevant marker"><a href="#or">or</a></code> (<code>find-symbol</code> <code class="string">"OR"</code> '#:cl)
       (<code>find-symbol</code> <code class="string">"XOR"</code> '#:cl)))
 =&gt; OR, :EXTERNAL</code></pre>
             </div>
@@ -196,19 +196,19 @@
           <dd>
             <p>This is just like normal <code>cond</code>, except:</p>
             <ul>
-              <li><p>If a <var>clause</var> that has no <var>forms</var> succeeds, then all the values that were returned by the <var>test-form</var> are returned, not just the <a class="common-lisp standard glossary" href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>;</p></li>
+              <li><p>If a <var>clause</var> that has no <var>forms</var> succeeds, then all the values that were returned by the <var>test-form</var> are returned, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>;</p></li>
               <li><p>If no <var>clause</var> succeeds, then no values are returned (instead of <code>nil</code>).</p></li>
             </ul>
             <div class="scroll">
               <pre class="example"><code class="common-lisp">(let ((<var>hash</var> (make-hash-table)))
-  (<code class="common-lisp library macro operator">multiple-value</code> () (<code class="common-lisp library marker"><a href="#cond">cond</a></code> ((gethash 'key <var>hash</var>))
+  (<code class="relevant">multiple-value</code> () (<code class="relevant marker"><a href="#cond">cond</a></code> ((gethash 'key <var>hash</var>))
                            ((values)))))
 =&gt; [no values]</code></pre>
             </div>
             <div class="scroll">
               <pre class="example"><code class="common-lisp">(let ((<var>hash</var> (make-hash-table)))
   (setf (gethash 'key <var>hash</var>) 'value)
-  (<code class="common-lisp library macro operator">multiple-value</code> () (<code class="common-lisp library marker"><a href="#cond">cond</a></code> ((gethash 'key <var>hash</var>))
+  (<code class="relevant">multiple-value</code> () (<code class="relevant marker"><a href="#cond">cond</a></code> ((gethash 'key <var>hash</var>))
                            ((values)))))
 =&gt; VALUE, T</code></pre>
             </div>
@@ -217,11 +217,11 @@
           <dt id="when"><a href="#when" class="anchor">⚓</a>  <pre>Variant <dfn>when</dfn> (&amp;key (<var>else</var> '(values)) (<var>identity</var> '(values)))
   (<var>test</var> &amp;body <var>forms</var>)</pre></dt>
           <dd>
-            <p>If <var>test</var> evaluates to true, evaluate <var>forms</var> as an implicit <code class="common-lisp library variant operator"><a href="#progn">(multiple-value progn)</a></code> with <var>identity</var> as the identity.</p>
+            <p>If <var>test</var> evaluates to true, evaluate <var>forms</var> as an implicit <code class="relevant"><a href="#progn">(multiple-value progn)</a></code> with <var>identity</var> as the identity.</p>
             <p>Else, evaluate <var>else</var>.</p>
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> ()
-  (<code class="common-lisp library marker"><a href="#when">when</a></code> <code>nil</code>
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> ()
+  (<code class="relevant marker"><a href="#when">when</a></code> <code>nil</code>
     (print <code class="string">"side-effect"</code>)))
 =&gt; [no values]</code></pre>
             </div>
@@ -230,7 +230,7 @@
           <dt id="unless"><a href="#unless" class="anchor">⚓</a> <pre>Variant <dfn>unless</dfn> (&amp;key (<var>else</var> '(values)) (<var>identity</var> '(values)))
   (<var>test</var> &amp;body <var>forms</var>)</pre></dt>
           <dd>
-            <p>If <var>test</var> evaluates to false, evaluate <var>forms</var> as an implicit <code class="common-lisp library variant operator"><a href="#progn">(multiple-value progn)</a></code> with <var>identity</var> as the identity.</p>
+            <p>If <var>test</var> evaluates to false, evaluate <var>forms</var> as an implicit <code class="relevant"><a href="#progn">(multiple-value progn)</a></code> with <var>identity</var> as the identity.</p>
             <p>Else, evaluate <var>else</var>.</p>
           </dd>
 
@@ -240,7 +240,7 @@
           <dt id="typecase"><a href="#typecase" class="anchor">⚓</a> <pre>Variant <dfn>typecase</dfn> () (<var>keyform</var> &amp;body <var>cases</var>)</pre></dt>
           <dt id="ctypecase"><a href="#ctypecase" class="anchor">⚓</a> <pre>Variant <dfn>ctypecase</dfn> () (<var>keyplace</var> &amp;body <var>cases</var>)</pre></dt>
           <dt id="etypecase"><a href="#etypecase" class="anchor">⚓</a> <pre>Variant <dfn>etypecase</dfn> () (<var>keyform</var> &amp;body <var>cases</var>)</pre></dt>
-          <dd><p>These are like their normal counterparts, except the <var>forms</var> in each case is an implicit <code class="common-lisp library variant operator"><a href="#progn">(multiple-value progn)</a></code>, and if no <var>case</var> matches in <code class="common-lisp library operator">case</code> or <code class="common-lisp library operator">typecase</code>, then no values are returned (instead of <code class="common-lisp standard constant">nil</code>).</p></dd>
+          <dd><p>These are like their normal counterparts, except the <var>forms</var> in each case is an implicit <code class="relevant"><a href="#progn">(multiple-value progn)</a></code>, and if no <var>case</var> matches in <code class="relevant">case</code> or <code class="relevant">typecase</code>, then no values are returned (instead of <code>nil</code>).</p></dd>
 
           <dt id="mapcar"><a href="#mapcar" class="anchor">⚓</a> <pre>Variant <dfn>mapcar</dfn> (<var>multiple-values-count</var>)
   (<var>function</var> &amp;rest+ <var>lists</var>)</pre></dt>
@@ -254,13 +254,13 @@
             <p>These are just like the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_mapc_.htm">normal variants</a>, except they can accumulate multiple results at the same time. This is especially useful to "triage" values (ex: split the elements of a list into 2 lists according to some criteria), and to accumulate multiple "layers" of values in one pass for macroexpansions, as an alternative to repeated mapping (sometimes with some readability problems due to reduced "correlation").</p>
             <p><var>multiple-values-count</var> is not evaluated, and must be a non-negative integer indicating the number of results (values) to accumulate and return. <var>function</var> would normally return that many values. If <var>function</var> returns less than <var>multiple-values-count</var> values, then the remaining values are <code>nil</code>. If <var>function</var> returns more than <var>multiple-values-count</var> values, then the excess values are ignored.</p>
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> (2)
-  (<code class="common-lisp library marker"><a href="#mapcar">mapcar</a></code> #'truncate '(3 5/4 5.5)))
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> (2)
+  (<code class="relevant marker"><a href="#mapcar">mapcar</a></code> #'truncate '(3 5/4 5.5)))
 =&gt; (3 1 5), (0 1/4 0.5)</code></pre>
             </div>
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> 2
-  (<code class="common-lisp library marker"><a href="#mapcan">mapcan</a></code> (lambda (<var>object</var>)
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> 2
+  (<code class="relevant marker"><a href="#mapcan">mapcan</a></code> (lambda (<var>object</var>)
             (if (numberp <var>object</var>)
                 (values (list <var>object</var>) <code>nil</code>)
                 (values <code>nil</code> (list <var>object</var>))))
@@ -269,8 +269,8 @@
             </div>
 
             <div class="scroll">
-              <pre class="example"><code class="common-lisp">(<code class="common-lisp library macro operator">multiple-value</code> 3
-  (<code class="common-lisp library marker"><a href="#maplist">maplist</a></code> (lambda (<var>tail</var>)
+              <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> 3
+  (<code class="relevant marker"><a href="#maplist">maplist</a></code> (lambda (<var>tail</var>)
              (values <var>tail</var>
                      (reverse <var>tail</var>)
                      (list (first <var>tail</var>) (second <var>tail</var>))))
