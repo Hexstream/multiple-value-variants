@@ -1,81 +1,59 @@
 (in-package #:multiple-value-variants)
 
-(defvar *infos* (make-hash-table :test 'eq))
+(defclass definitions-system (defsys:standard-system)
+  ())
 
-(defgeneric multiple-value-variants:name (object))
-(defgeneric multiple-value-variants:form-lambda-list (object))
-(defgeneric multiple-value-variants:options-lambda-list (object))
-(defgeneric multiple-value-variants:expander (object))
+(defvar *definitions* (make-instance 'definitions-system))
 
-(defclass multiple-value-variants:info () ())
+(setf (defsys:locate (defsys:root-system) 'multiple-value)
+      *definitions*)
 
-(defclass multiple-value-variants:standard-info (info)
-  ((%name :initarg :name
-          :reader multiple-value-variants:name
-          :type symbol)
-   (%options-lambda-list :initarg :options-lambda-list
-                         :reader multiple-value-variants:options-lambda-list
+(defgeneric form-lambda-list (object))
+(defgeneric options-lambda-list (object))
+(defgeneric expander (object))
+
+(defclass definition () ())
+
+(defclass standard-definition (definition defsys:name-mixin)
+  ((%options-lambda-list :initarg :options-lambda-list
+                         :reader options-lambda-list
                          :type list)
    (%form-lambda-list :initarg :form-lambda-list
-                      :reader multiple-value-variants:form-lambda-list
+                      :reader form-lambda-list
                       :type list)
    (%expander :initarg :expander
-              :reader multiple-value-variants:expander
+              :reader expander
               :type (or function symbol))
    (%atom-options-transformer :initarg :atom-options-transformer
-                              :reader multiple-value-variants:atom-options-transformer
+                              :reader atom-options-transformer
                               :type (or function symbol)
                               :initform #'list)))
 
-(defmethod print-object ((info multiple-value-variants:standard-info) stream)
-  (print-unreadable-object (info stream :type t)
-    (prin1 (multiple-value-variants:name info) stream)))
-
-(define-condition multiple-value-variants:not-found (error)
-  ((%name :initarg :name
-          :reader multiple-value-variants:name
-          :type symbol))
-  (:report (lambda (not-found stream)
-             (format stream "No multiple-value-variant with name ~S."
-                     (multiple-value-variants:name not-found)))))
-
-(defun multiple-value-variants:locate (name &key (errorp t))
-  (check-type name symbol)
-  (or (gethash name *infos*)
-      (and errorp
-           (error 'multiple-value-variants:not-found :name name))))
-
-(defun (setf %locate) (new name &key (errorp t))
-  (declare (ignore errorp))
-  (check-type name symbol)
-  (check-type new info)
-  (setf (gethash name *infos*) new))
-
 ;; Maybe export at some point.
-(defun %canonicalize-options (options info)
+(defun %canonicalize-options (options definition)
   (if (listp options)
       options
       (let ((transformed
-             (funcall (multiple-value-variants:atom-options-transformer info)
+             (funcall (atom-options-transformer definition)
                       options)))
         (if (listp transformed)
             transformed
             (error "atom-options-transformer for ~S ~
                     returned ~S, which is not a list."
-                   (multiple-value-variants:name info) transformed)))))
+                   (defsys:name definition) transformed)))))
 
-(define-condition multiple-value-variants:not-found-chain (error)
+(define-condition not-found-chain (error)
   ((%form :initarg :form
-          :reader multiple-value-variants:form)
+          :reader form)
    (%chain :initarg :chain
-           :reader multiple-value-variants:chain
+           :reader chain
            :type list))
   (:report (lambda (not-found stream)
              (format stream "~S expansion of the following form failed:~@
                              ~S~2%Chain of attempted expansions: ~S"
                      'multiple-value-variants:multiple-value
-                     (multiple-value-variants:form not-found)
-                     (multiple-value-variants:chain not-found)))))
+                     (form not-found)
+                     (chain not-found)))))
 
 ;; Maybe export at some point.
 (defun %locate-expand (form env &aux chain (initial-form form))
@@ -84,9 +62,9 @@
              (etypecase form
                ((cons symbol)
                 (let* ((operator (first form))
-                       (info (multiple-value-variants:locate operator :errorp nil)))
-                  (if info
-                      (values info form)
+                       (definition (defsys:locate *definitions* operator :errorp nil)))
+                  (if definition
+                      (values definition form)
                       (attempt-macroexpansion form (list :macro operator)))))
                (symbol
                 (attempt-macroexpansion form (list :symbol-macro form)))))
@@ -95,24 +73,21 @@
              (multiple-value-bind (expansion expandedp) (macroexpand-1 form env)
                (if expandedp
                    (recurse expansion)
-                   (error 'multiple-value-variants:not-found-chain
+                   (error 'not-found-chain
                           :form initial-form
                           :chain (nreverse chain))))))
     (recurse form)))
 
 ;; Maybe export at some point.
 (defun %canonicalize (options form &optional env)
-  (multiple-value-bind (info form) (%locate-expand form env)
-    (values (%canonicalize-options options info)
+  (multiple-value-bind (definition form) (%locate-expand form env)
+    (values (%canonicalize-options options definition)
             form
-            info)))
+            definition)))
 
-(defun multiple-value-variants:expand (options form &optional env)
-  (multiple-value-bind (options form info) (%canonicalize options form env)
-    (funcall (multiple-value-variants:expander info)
-             options
-             form
-             env)))
+(defun %expand (options form &optional env)
+  (multiple-value-bind (options form definition) (%canonicalize options form env)
+    (funcall (expander definition) options form env)))
 
 (defun %extract-&whole (lambda-list)
   '(values whole-var lambda-list)
@@ -185,29 +160,21 @@
                     (%check-expected-operator ,operator-var ',name)
                     ,@(funcall form-env-template body))))))))))
 
-(defun %remove-keys (keys plist)
-  (let ((keys (if (listp keys) keys (list keys)))
-        (processp nil))
-    (map-bind (mapcan) ((key plist) (value (cdr plist)))
-      (when (setf processp (not processp))
-        (unless (member key keys)
-          (list key value))))))
+(defun %ensure (name form-lambda-list options-lambda-list expander)
+  (setf (defsys:locate *definitions* name)
+        (make-instance 'standard-definition
+                       :name name
+                       :options-lambda-list options-lambda-list
+                       :form-lambda-list form-lambda-list
+                       :expander expander)))
 
-(defun multiple-value-variants:ensure
-    (name form-lambda-list options-lambda-list expander
-     &rest keys &key (class 'multiple-value-variants:standard-info) &allow-other-keys)
-  (setf (%locate name)
-        (apply #'make-instance class
-               :name name
-               :options-lambda-list options-lambda-list
-               :form-lambda-list form-lambda-list
-               :expander expander
-               (%remove-keys :class keys))))
+(defmethod defsys:expand-definition ((system definitions-system) name environment args &key)
+  (destructuring-bind (options-lambda-list form-lambda-list &body body) args
+    `(%ensure ',name
+              ',options-lambda-list
+              ',form-lambda-list
+              ,(%make-expander name options-lambda-list form-lambda-list body))))
 
-(defmacro multiple-value-variants:define
-    (name options-lambda-list form-lambda-list &body body)
-  `(multiple-value-variants:ensure
-    ',name
-    ',options-lambda-list
-    ',form-lambda-list
-    ,(%make-expander name options-lambda-list form-lambda-list body)))
+(defmacro multiple-value (options &body form &environment env)
+  (check-type form (cons t null))
+  (%expand options (first form) env))

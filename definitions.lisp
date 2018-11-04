@@ -1,11 +1,11 @@
 (in-package #:multiple-value-variants)
 
-(define progn (&key (identity '(values))) (&body forms)
+(define (multiple-value progn) (&key (identity '(values))) (&body forms)
   (if forms
       `(progn ,@forms)
       identity))
 
-(define prog1 () (result &body body)
+(define (multiple-value prog1) () (result &body body)
   `(multiple-value-prog1 ,result ,@body))
 
 (defun %recursively (forms function &key
@@ -32,7 +32,7 @@
           (error "(~S ~S) requires at least one form or an explicit ~S."
                  'multiple-value name :identity))))
 
-(define and (&key (identity nil identityp) (nth 0)) (&rest forms)
+(define (multiple-value and) (&key (identity nil identityp) (nth 0)) (&rest forms)
   (%handling-identity
    'and identity identityp forms
    (lambda ()
@@ -44,7 +44,7 @@
                                    (values-list ,values)))
                             current))))))
 
-(define or (&key (identity nil identityp) (nth 0)) (&rest forms)
+(define (multiple-value or) (&key (identity nil identityp) (nth 0)) (&rest forms)
   (%handling-identity
    'or identity identityp forms
    (lambda ()
@@ -56,7 +56,7 @@
                                    ,rest))
                             current))))))
 
-(define cond (&key (nth 0)) (&rest clauses)
+(define (multiple-value cond) (&key (nth 0)) (&rest clauses)
   (%recursively
    clauses
    (lambda (current else)
@@ -84,14 +84,14 @@
                  condition)))))
 
 
-(define when (&key (else '(values)) (identity '(values) identityp))
+(define (multiple-value when) (&key (else '(values)) (identity '(values) identityp))
     (test &body forms)
   `(if ,test
        (multiple-value (,@(when identityp (list :identity identity)))
          (progn ,@forms))
        ,else))
 
-(define unless (&key (else '(values)) (identity '(values) identityp))
+(define (multiple-value unless) (&key (else '(values)) (identity '(values) identityp))
     (test &body forms)
   `(if ,test
        ,else
@@ -112,22 +112,22 @@
                (nconc new-cases (list '(t (values))))
                new-cases))))
 
-(define case () (keyform &body cases)
+(define (multiple-value case) () (keyform &body cases)
   (%caselike 'case keyform cases t))
 
-(define ccase () (keyplace &body cases)
+(define (multiple-value ccase) () (keyplace &body cases)
   (%caselike 'ccase keyplace cases))
 
-(define ecase () (keyform &body cases)
+(define (multiple-value ecase) () (keyform &body cases)
   (%caselike 'ecase keyform cases))
 
-(define typecase () (keyform &body cases)
+(define (multiple-value typecase) () (keyform &body cases)
   (%caselike 'typecase keyform cases t))
 
-(define ctypecase () (keyplace &body cases)
+(define (multiple-value ctypecase) () (keyplace &body cases)
   (%caselike 'ctypecase keyplace cases))
 
-(define etypecase () (keyform &body cases)
+(define (multiple-value etypecase) () (keyform &body cases)
   (%caselike 'etypecase keyform cases))
 
 
@@ -186,22 +186,22 @@
          (values ,@(mapcar (plambda (list 'funcall :1))
                            finish-vars))))))
 
-(define mapcar (multiple-values-count) (function list &rest more-lists)
+(define (multiple-value mapcar) (multiple-values-count) (function list &rest more-lists)
   (%expand-multiple-value-mapper 'mapc '%make-list-accumulator
                                  multiple-values-count
                                  function (cons list more-lists)))
 
-(define mapcan (multiple-values-count) (function list &rest more-lists)
+(define (multiple-value mapcan) (multiple-values-count) (function list &rest more-lists)
   (%expand-multiple-value-mapper 'mapc '%make-nconc-accumulator
                                  multiple-values-count
                                  function (cons list more-lists)))
 
-(define maplist (multiple-values-count) (function list &rest more-lists)
+(define (multiple-value maplist) (multiple-values-count) (function list &rest more-lists)
   (%expand-multiple-value-mapper 'mapl '%make-list-accumulator
                                  multiple-values-count
                                  function (cons list more-lists)))
 
-(define mapcon (multiple-values-count) (function list &rest more-lists)
+(define (multiple-value mapcon) (multiple-values-count) (function list &rest more-lists)
   (%expand-multiple-value-mapper 'mapl '%make-nconc-accumulator
                                  multiple-values-count
                                  function (cons list more-lists)))
