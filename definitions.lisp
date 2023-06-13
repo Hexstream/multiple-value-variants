@@ -103,9 +103,10 @@
   (list* operator
          keyform
          (let ((new-cases
-                (map-bind (mapcar) ((case cases))
-                  (destructuring-bind (keys &body body) case
-                    `(,keys (multiple-value () (progn ,@body)))))))
+                 (mapcar (lambda (case)
+                           (destructuring-bind (keys &body body) case
+                             `(,keys (multiple-value () (progn ,@body)))))
+                         cases)))
            (if (and otherwisep
                     (not (member (car (first (last cases)))
                                  '(t otherwise))))
