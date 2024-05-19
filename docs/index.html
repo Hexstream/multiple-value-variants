@@ -132,7 +132,7 @@
 
         <p>There are 2 recurring features throughout the API:</p>
 
-        <ul>
+        <ul class="list">
           <li><var>identity</var> generally indicates the form to evaluate (and values to return) when an implicit <code class="relevant"><a href="#progn">(multiple-value progn)</a></code> has no forms.</li>
           <li><var>nth</var> indicates which value to test for conditionals.</li>
         </ul>
@@ -213,7 +213,7 @@
   (&amp;rest <var>clauses</var>)</pre></dt>
           <dd>
             <p>This is just like normal <code>cond</code>, except:</p>
-            <ul>
+            <ul class="list">
               <li><p>If a <var>clause</var> that has no <var>forms</var> succeeds, then all the values that were returned by the <var>test-form</var> are returned, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>;</p></li>
               <li><p>If no <var>clause</var> succeeds, then no values are returned (instead of <code>nil</code>).</p></li>
             </ul>
