@@ -187,7 +187,7 @@
   (&amp;rest <var>forms</var>)</pre></dt>
           <dd>
             <p>If <var>identity</VAR> is not specified, then there must be at least one <var>form.</var></p>
-            <p>This is like normal <code>and</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#false">false</a>, returns all values that were returned by that <var>form</var>, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
+            <p>This is like normal <code>and</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is <a href="https://www.lispworks.com/documentation/HyperSpec/Body/26_glo_f.htm#false">false</a>, returns all values that were returned by that <var>form</var>, not just the <a href="https://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
             <div class="scroll">
               <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> ()
   (<code class="relevant marker"><a href="#and">and</a></code> (values <code>nil</code> 'other 'values)
@@ -200,7 +200,7 @@
   (&amp;rest <var>forms</var>)</pre></dt>
           <dd>
             <p>If <var>identity</var> is not specified, then there must be at least one <var>form</var>.</p>
-            <p>This is like normal <code>or</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is true, returns all values that were returned by that <var>form</var>, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
+            <p>This is like normal <code>or</code>, except if one of the non-last <var>forms</var>' <var>nth</var>-value is true, returns all values that were returned by that <var>form</var>, not just the <a href="https://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>.</p>
             <div class="scroll">
               <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> ()
   (<code class="relevant marker"><a href="#or">or</a></code> (<code>find-symbol</code> <code class="string">"OR"</code> '#:cl)
@@ -214,7 +214,7 @@
           <dd>
             <p>This is just like normal <code>cond</code>, except:</p>
             <ul class="list">
-              <li><p>If a <var>clause</var> that has no <var>forms</var> succeeds, then all the values that were returned by the <var>test-form</var> are returned, not just the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>;</p></li>
+              <li><p>If a <var>clause</var> that has no <var>forms</var> succeeds, then all the values that were returned by the <var>test-form</var> are returned, not just the <a href="https://www.lispworks.com/documentation/HyperSpec/Body/26_glo_p.htm#primary_value">primary value</a>;</p></li>
               <li><p>If no <var>clause</var> succeeds, then no values are returned (instead of <code>nil</code>).</p></li>
             </ul>
             <div class="scroll">
@@ -269,7 +269,7 @@
           <dt id="mapcon"><a href="#mapcon" class="anchor">⚓</a> <pre>Variant <dfn>mapcon</dfn> (<var>multiple-values-count</var>)
   (<var>function</var> &amp;rest+ <var>lists</var>)</pre></dt>
           <dd>
-            <p>These are just like the <a href="http://www.lispworks.com/documentation/HyperSpec/Body/f_mapc_.htm">normal variants</a>, except they can accumulate multiple results at the same time. This is especially useful to "triage" values (ex: split the elements of a list into 2 lists according to some criteria), and to accumulate multiple "layers" of values in one pass for macroexpansions, as an alternative to repeated mapping (sometimes with some readability problems due to reduced "correlation").</p>
+            <p>These are just like the <a href="https://www.lispworks.com/documentation/HyperSpec/Body/f_mapc_.htm">normal variants</a>, except they can accumulate multiple results at the same time. This is especially useful to "triage" values (ex: split the elements of a list into 2 lists according to some criteria), and to accumulate multiple "layers" of values in one pass for macroexpansions, as an alternative to repeated mapping (sometimes with some readability problems due to reduced "correlation").</p>
             <p><var>multiple-values-count</var> is not evaluated, and must be a non-negative integer indicating the number of results (values) to accumulate and return. <var>function</var> would normally return that many values. If <var>function</var> returns less than <var>multiple-values-count</var> values, then the remaining values are <code>nil</code>. If <var>function</var> returns more than <var>multiple-values-count</var> values, then the excess values are ignored.</p>
             <div class="scroll">
               <pre class="example"><code class="common-lisp">(<code class="relevant">multiple-value</code> (2)
